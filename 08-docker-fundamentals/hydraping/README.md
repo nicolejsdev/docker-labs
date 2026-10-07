@@ -38,6 +38,7 @@ Erro encontrado:
 ```text
 GDBus.Error:org.freedesktop.DBus.Error.AccessDenied
 An AppArmor policy prevents this sender from sending this message
+```
 
 ## 🔐 Investigação
 
@@ -93,7 +94,9 @@ Logs
 - integração entre container e host;
 - investigação de problemas;
 - conceitos de segurança no Linux.
+
 💡 Aprendizado
+
 O principal aprendizado foi entender que fazer uma aplicação funcionar não significa necessariamente que a primeira abordagem seja a mais adequada.
 Ao encontrar uma restrição de segurança, foi necessário investigar o motivo do bloqueio e adaptar a solução sem desabilitar a proteção do sistema.
 Esse projeto também ajudou a compreender melhor a relação entre containers, sistema operacional, permissões e mecanismos de segurança do Linux.
