@@ -80,8 +80,10 @@ Essa abordagem evita que o container precise acessar diretamente o sistema de no
 
 ![HydraPing - Logs](../imagens/hydraping03.jpeg)
 
-Container em execução
+## Container em execução
+
 Logs
+
 📚 O que pratiquei
 - criação de Dockerfile;
 - construção de imagens;
