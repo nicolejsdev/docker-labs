@@ -68,17 +68,9 @@ Essa abordagem evita que o container precise acessar diretamente o sistema de no
 
 ## 📸 Resultado
 
-### Notificação
-
-![HydraPing - Notificação](../imagens/hydraping01.jpeg)
-
-### Container em execução
-
-![HydraPing - Container em execução](../imagens/hydraping02.jpeg)
-
-### Logs
-
-![HydraPing - Logs](../imagens/hydraping03.jpeg)
+![HydraPing - Notificação](../08-docker-fundamentals/imagens/hydraping01.jpeg)
+![HydraPing - Container em execução](../08-docker-fundamentals/imagens/hydraping02.jpeg)
+![HydraPing - Logs](../08-docker-fundamentals/imagens/hydraping03.jpeg)
 
 ## Container em execução
 
