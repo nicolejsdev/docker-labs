@@ -1,0 +1,18 @@
+
+services:
+  web:
+    build:
+      context: .
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+  contador:
+    image: alpine:latest
+    command: sh -c "while true; do date >> /data/registros.log; sleep 10; done"
+    volumes:
+      - registros:/data
+    restart: unless-stopped
+
+volumes:
+  registros:
