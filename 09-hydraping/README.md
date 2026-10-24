@@ -1,96 +1,133 @@
 # 💧 HydraPing
 
-Projeto prático desenvolvido durante meus estudos de Docker e DevOps.
+Lembrete de hidratação que roda em **container Docker**, registra eventos em **logs persistentes** e dispara **notificações no desktop Ubuntu**, com intervalo configurável.
 
-O HydraPing é um lembrete de hidratação executado em um container Docker. O projeto registra os eventos em logs e utiliza um script no Ubuntu para gerar uma notificação no desktop.
+> **Destaque:** a primeira abordagem foi bloqueada pelo **AppArmor**. Em vez de desabilitar a proteção, redesenhei a arquitetura para que o container nunca precise acessar o sistema de notificações do host.
 
 ## 🎯 Objetivo
 
 Criar um pequeno serviço que:
 
-- execute em um container Docker;
-- registre os lembretes em logs;
-- mantenha os logs persistentes;
-- gere uma notificação no desktop Ubuntu;
-- permita configurar o intervalo entre os lembretes.
+- execute dentro de um container Docker
+- registre os lembretes em logs
+- mantenha os logs persistentes (volume)
+- gere uma notificação no desktop Ubuntu
+- permita configurar o intervalo entre os lembretes
 
-## 🛠️ Tecnologias
+## 🧰 Tecnologias
 
-- Linux / Ubuntu
-- Docker
-- Bash
-- Volumes
-- Logs
-- AppArmor
-- D-Bus
-- notify-send
+| Área | Ferramentas |
+|------|-------------|
+| Containers | Docker, Dockerfile, volumes, variáveis de ambiente |
+| Linux | Ubuntu, Bash, D-Bus, `notify-send` |
+| Segurança | AppArmor |
+| Observabilidade | logs em arquivo |
 
-## 🐳 Primeira abordagem
+## 🏗️ Arquitetura
 
-Inicialmente, a ideia era fazer o próprio container acessar diretamente o sistema de notificações do Ubuntu através do D-Bus.
+```mermaid
+flowchart LR
+    subgraph Container["🐳 Container Docker"]
+        A[HydraPing] -->|grava evento| L[(Log)]
+    end
+    L --- V[(Volume persistente)]
+    V -->|arquivo no host| M[Script de monitoramento<br/>Ubuntu]
+    M -->|notify-send| N[🔔 Notificação no desktop]
+```
 
-O objetivo era integrar o container ao sistema de notificações do host.
+| Componente | Responsabilidade |
+|------------|------------------|
+| **Docker** | executa o HydraPing e gera os eventos |
+| **Volume** | mantém os logs fora do container, persistentes |
+| **Log** | registra cada lembrete |
+| **Script no Ubuntu** | monitora o log |
+| **`notify-send`** | exibe a notificação no desktop |
 
-Durante os testes, essa abordagem foi bloqueada pelo AppArmor.
+## 🔐 O desafio: AppArmor
 
-Erro encontrado:
+### Primeira abordagem
+
+O container tentava acessar diretamente o sistema de notificações do host via **D-Bus**. O AppArmor bloqueou:
 
 ```text
 GDBus.Error:org.freedesktop.DBus.Error.AccessDenied
 An AppArmor policy prevents this sender from sending this message
 ```
 
-## 🔐 Investigação
+### Investigação
 
-O problema não estava no funcionamento do Docker ou do Bash.
+| Pergunta | Conclusão |
+|----------|-----------|
+| O Docker ou o Bash estavam com defeito? | Não, ambos funcionavam normalmente |
+| O que estava falhando? | O container tentava acessar um recurso protegido do host |
+| Quem bloqueou? | O AppArmor, aplicando sua política de segurança |
+| É um bug? | Não, é o comportamento esperado de uma proteção funcionando |
 
-O container estava tentando acessar um recurso protegido do sistema host.
+### Decisão
 
-O AppArmor impediu esse acesso de acordo com sua política de segurança.
+**Não desabilitei o AppArmor.** Desligar uma proteção para fazer algo funcionar resolve o sintoma, mas enfraquece a segurança do sistema. Mudei a arquitetura para respeitar o limite entre container e host.
 
-Em vez de desabilitar o AppArmor, a solução foi alterar a arquitetura.
+### Nova abordagem
 
-## 🔄 Nova abordagem
+O container só **gera o evento e grava no log**. Quem aciona a notificação é um script no próprio Ubuntu, que monitora esse arquivo. Assim cada parte faz uma coisa só e o container não precisa de acesso ao D-Bus do host.
 
-O container passou a ser responsável por gerar o evento e registrar a informação em um arquivo de log persistente.
+## ⚖️ Decisões de design
 
-Um script executado no Ubuntu monitora esse arquivo e gera a notificação.
+| Decisão | Motivo |
+|---------|--------|
+| Container não acessa o D-Bus do host | respeita o isolamento e o AppArmor |
+| Comunicação via arquivo de log | simples, observável e desacoplada |
+| Log em volume | os dados sobrevivem à recriação do container |
+| Notificação no host | o desktop pertence ao host, não ao container |
+| Intervalo configurável | ajuste sem alterar o código |
 
-A nova arquitetura separou as responsabilidades:
+## 🛠️ Como executar
 
-- Docker: executa o HydraPing;
-- Volume: mantém os dados persistentes;
-- Log: registra os eventos;
-- Ubuntu: monitora o log;
-- notify-send: exibe a notificação.
+<!-- Preencha com os comandos reais que você usou. Esqueleto: -->
 
-Essa abordagem evita que o container precise acessar diretamente o sistema de notificações do host.
+```bash
+# 1. Construir a imagem
+docker build -t <nome-da-imagem> .
+
+# 2. Executar o container com volume e intervalo configurável
+docker run -d --name <nome-do-container> \
+  -e <VARIAVEL_INTERVALO>=<segundos> \
+  -v <pasta-do-host>:<pasta-no-container> \
+  <nome-da-imagem>
+
+# 3. Iniciar o script de monitoramento no Ubuntu
+./<nome-do-script>.sh
+```
+
+Para acompanhar os eventos:
+
+```bash
+tail -f <caminho-do-log>
+```
 
 ## 📸 Resultado
 
-![HydraPing - Notificação](../08-docker-fundamentals/imagens/hydraping01.jpeg)
-![HydraPing - Container em execução](../08-docker-fundamentals/imagens/hydraping02.jpeg)
-![HydraPing - Logs](../08-docker-fundamentals/imagens/hydraping03.jpeg)
+### Notificação no desktop
+![HydraPing - Notificação](screenshots/hydraping01.jpeg)
 
-## Container em execução
+### Container em execução
+![HydraPing - Container em execução](screenshots/hydraping02.jpeg)
 
-Logs
+### Logs
+![HydraPing - Logs](screenshots/hydraping03.jpeg)
 
-📚 O que pratiquei
-- criação de Dockerfile;
-- construção de imagens;
-- execução de containers;
-- variáveis de ambiente;
-- volumes;
-- persistência de dados;
-- análise de logs;
-- Bash scripting;
-- integração entre container e host;
-- investigação de problemas;
-- conceitos de segurança no Linux.
+## 🧠 Aprendizados
 
-💡 Aprendizado
+- Fazer uma aplicação funcionar não significa que a primeira abordagem seja a adequada.
+- Um bloqueio de segurança é uma informação: antes de contorná-lo, é preciso entender **o que** ele protege e **por quê**.
+- Separar responsabilidades (gerar evento, registrar, notificar) deixou o sistema mais simples e seguro.
+- Containers, sistema operacional, permissões e mecanismos como o AppArmor trabalham em camadas, e entender essa relação é parte do troubleshooting.
 
-O principal aprendizado foi entender que fazer uma aplicação funcionar não significa necessariamente que a primeira abordagem seja a mais adequada.
-Ao encontrar uma restrição de segurança, foi necessário investigar o motivo do bloqueio e adaptar a solução sem desabilitar a proteção do sistema.
-Esse projeto também ajudou a compreender melhor a relação entre containers, sistema operacional, permissões e mecanismos de segurança do Linux.
+## 📚 O que pratiquei
+
+| Área | Tópicos |
+|------|---------|
+| Docker | `Dockerfile`, build de imagens, execução de containers, variáveis de ambiente, volumes, persistência |
+| Linux | Bash scripting, análise de logs, `notify-send`, D-Bus |
+| Segurança | AppArmor, isolamento entre container e host |
+| Método | investigação baseada em evidências e adaptação da solução sem enfraquecer a proteção |
