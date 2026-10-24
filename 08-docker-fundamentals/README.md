@@ -1,94 +1,100 @@
-# 08 - Docker Fundamentals
+# 🐳 Docker Fundamentals
 
-## Objetivo
+Laboratório prático dos **fundamentos do Docker no Ubuntu**: instalação, validação do ambiente e execução de um servidor web **Nginx** em container, com mapeamento de portas e gerenciamento do ciclo de vida.
 
-Praticar os fundamentos do Docker no Ubuntu Linux, desde a instalação até a execução e o gerenciamento de um servidor web em container.
+## 🎯 Objetivo
 
-Este laboratório faz parte dos meus estudos práticos em Linux, infraestrutura e DevOps.
+Entender como o Docker executa aplicações isoladas em containers, praticando:
 
-## Ambiente utilizado
+- validação da instalação (`docker run hello-world`)
+- download e execução de imagens do Docker Hub
+- execução em segundo plano e mapeamento de portas (`-d`, `-p`)
+- listagem, parada e reinício de containers (`docker ps`, `stop`, `start`)
 
-* Ubuntu 26.04 LTS
-* Arquitetura: amd64
-* Docker Engine
-* Docker Hub
-* Nginx
+## 🧰 Ambiente
 
-## 1. Instalação e validação do Docker
+- Ubuntu 26.04 LTS (amd64)
+- Docker Engine (<!-- ex: instalado pelo repositório oficial da Docker via apt -->)
+- Imagens: `hello-world` e `nginx` (Docker Hub)
 
-Após instalar o Docker Engine, validei o funcionamento com:
+## 🧠 Conceitos básicos
+
+| Conceito | Descrição |
+|----------|-----------|
+| **Imagem** | pacote somente leitura com a aplicação e suas dependências (ex.: `nginx`) |
+| **Container** | instância em execução de uma imagem, isolada do resto do sistema |
+| **Docker daemon** | serviço que cria e gerencia containers |
+| **Docker Hub** | registro público de onde as imagens são baixadas |
+| **Porta mapeada** | liga uma porta do host a uma porta do container (`host:container`) |
+
+## 🛠️ Passo a passo
+
+### 1. Validar a instalação
 
 ```bash
 docker run hello-world
 ```
 
-O resultado confirmou a comunicação com o Docker daemon, o download da imagem e a execução do primeiro container.
+Como a imagem não existia localmente, o Docker a baixou do Docker Hub, criou um container e o executou. A mensagem de saída confirma o fluxo completo:
 
-## 2. Execução do Nginx
+```text
+cliente Docker → daemon → pull da imagem (Docker Hub) → container criado → saída exibida
+```
 
-Utilizei a imagem oficial do Nginx disponível no Docker Hub:
+### 2. Executar o Nginx
 
 ```bash
 docker run -d --name meu-nginx -p 8080:80 nginx
 ```
 
-### Parâmetros utilizados
+| Parâmetro | Descrição |
+|-----------|-----------|
+| `-d` | executa o container em segundo plano |
+| `--name meu-nginx` | define o nome do container |
+| `-p 8080:80` | mapeia a porta **8080 do host** para a **80 do container** |
+| `nginx` | imagem usada para executar o servidor web |
 
-| Parâmetro          | Descrição                                                 |
-| ------------------ | --------------------------------------------------------- |
-| `-d`               | Executa o container em segundo plano.                     |
-| `--name meu-nginx` | Define o nome do container.                               |
-| `-p 8080:80`       | Mapeia a porta 8080 do host para a porta 80 do container. |
-| `nginx`            | Imagem utilizada para executar o servidor web.            |
+### 3. Acessar pelo navegador
 
-Após iniciar o container, acessei o servidor pelo navegador:
-
-http://localhost:8080
-
-A página padrão do Nginx foi exibida com sucesso.
-
-## 3. Gerenciamento do container
-
-Para listar os containers em execução:
-
-```bash
-docker ps
-```
-
-Para parar o container:
-
-```bash
-docker stop meu-nginx
-```
-
-Para iniciar novamente:
-
-```bash
-docker start meu-nginx
-```
-
-## 4. Resultados e aprendizados
-
-* Instalação e validação do Docker Engine.
-* Download e execução de imagens do Docker Hub.
-* Criação e gerenciamento de containers.
-* Mapeamento de portas entre o host e o container.
-* Execução local de um servidor web Nginx.
-
-Este laboratório permitiu conectar os conceitos de Linux, redes e containers, colocando em prática comandos fundamentais para ambientes de infraestrutura e DevOps.
-
-## 5. Evidências
-
-### Nginx funcionando no navegador
+Abrir [http://localhost:8080](http://localhost:8080). A página padrão do Nginx foi exibida:
 
 ![Página padrão do Nginx](screenshots/nginx-browser.png)
 
-### Comandos Docker no terminal
+O acesso funciona porque o tráfego da porta 8080 do host é encaminhado para a porta 80 dentro do container.
+
+### 4. Gerenciar o container
+
+```bash
+docker ps                # lista os containers em execução
+docker stop meu-nginx    # para o container
+docker start meu-nginx   # inicia novamente o mesmo container
+```
+
+| Comando | Efeito |
+|---------|--------|
+| `docker ps` | mostra ID, imagem, status, portas e nome dos containers **em execução** |
+| `docker stop` | encerra o container de forma ordenada |
+| `docker start` | reinicia o container já criado, sem criar outro |
 
 ![Execução e gerenciamento do container](screenshots/docker-terminal.png)
 
----
+## 🔍 Troubleshooting
 
-**Status:** Laboratório concluído.
+Perguntas que este laboratório já permite responder:
 
-**Próximos estudos:** Dockerfile, volumes, redes Docker e Docker Compose.
+| Pergunta | Comando | Onde olhar |
+|----------|---------|-----------|
+| O Docker está funcionando? | `docker run hello-world` | mensagem de confirmação |
+| O container está rodando? | `docker ps` | coluna `STATUS` |
+| Em qual porta ele responde? | `docker ps` | coluna `PORTS` (`0.0.0.0:8080->80/tcp`) |
+| A página abre? | navegador em `localhost:8080` | página padrão do Nginx |
+
+## 🧠 Aprendizados
+
+- Uma **imagem** é o modelo, e o **container** é a instância em execução dele.
+- O Docker baixa a imagem automaticamente do Docker Hub se ela não existir localmente.
+- Sem `-p`, o container não fica acessível pelo host: o mapeamento de portas é o que expõe o serviço.
+- `-d` libera o terminal, e `docker ps` é o primeiro comando para ver o que está rodando.
+- `stop` e `start` controlam o ciclo de vida do **mesmo** container.
+- Containers conectam conceitos de Linux (processos, redes e isolamento) à entrega de aplicações.
+
